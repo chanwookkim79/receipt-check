@@ -5,6 +5,28 @@
 
 ---
 
+## 구현 현황
+
+| 파일 | 역할 | 상태 |
+|------|------|------|
+| `engine/mail_client.py` | POP3 수신, 첨부파일 다운로드, SMTP 결과 발송 | 완료 |
+| `engine/receipt_analyzer.py` | OCR(pytesseract) 기반 분석 — 방법 A | 완료 |
+| `engine/llm_reviewer.py` | Ollama LLaVA 로컬 LLM 분석 — 방법 B (권장) | 완료 |
+| `engine/approval_engine.py` | 신뢰도 기반 승인/반려/수동검토 판단 | 완료 |
+| `engine/groupware_automation.py` | Playwright 그룹웨어 자동화 | 완료 |
+| `bot.py` | 전체 파이프라인 통합 (`python bot.py`로 1회 실행) | 완료 |
+| `scheduler.py` | 5분 주기 자동 실행 (`python scheduler.py`) | 완료 |
+| `dashboard.py` | Streamlit 모니터링 (`streamlit run dashboard.py`) | 완료 |
+
+### 실제 환경 적용 전 필수 작업
+
+1. `config.yaml` 작성 (`config.yaml.example` 복사 후 사내 메일/그룹웨어 정보 입력)
+2. Ollama 설치 + `ollama pull llava:7b` (또는 13b)
+3. `groupware_automation.py`의 버튼 셀렉터를 실제 그룹웨어 DOM에 맞게 수정 (Playwright codegen 활용)
+4. 초기 2~4주는 `auto_approve_threshold: 0.95`로 높게 잡아 대부분 수동검토로 운영
+
+---
+
 ## 1. 프로젝트 개요
 
 ### 배경
