@@ -55,52 +55,37 @@
 ## 2. 시스템 아키텍처
 
 ```mermaid
-flowchart TD
-    subgraph 외부시스템["외부 시스템 (사내 인프라)"]
-        MAIL_SERVER["📧 사내 메일 서버\n(POP3 / SMTP)"]
-        GROUPWARE["🏢 웹 그룹웨어\n(결재 시스템)"]
+flowchart LR
+    MAIL["📧 메일 서버\nPOP3 / SMTP"]
+
+    subgraph BOT["🤖 봇 엔진 (bot.py)"]
+        direction TB
+        A["① 메일 수신\nmail_client.py"]
+        B["② 영수증 분석\nLLM / OCR"]
+        C["③ 승인 판단\napproval_engine.py"]
+        A --> B --> C
     end
 
-    subgraph 로컬LLM["로컬 AI (외부 미연결)"]
-        OLLAMA["🤖 Ollama\n(LLaVA 7b/13b)"]
-        TESSERACT["🔤 Tesseract OCR\n(pytesseract)"]
+    subgraph AI["💻 로컬 AI"]
+        direction TB
+        LLM["Ollama LLaVA\n방법 B 권장"]
+        OCR["Tesseract OCR\n방법 A 폴백"]
     end
 
-    subgraph 봇엔진["봇 엔진 (bot.py)"]
-        MAIL_CLIENT["mail_client.py\nPOP3 수신 + 첨부파일 다운로드"]
-        ANALYZER["receipt_analyzer.py\nOCR 분석 (방법 A)"]
-        LLM_REVIEWER["llm_reviewer.py\nLLM 분석 (방법 B, 권장)"]
-        APPROVAL["approval_engine.py\n승인/반려/수동검토 판단"]
-        GW_BOT["groupware_automation.py\nPlaywright 자동화"]
-    end
+    GW["🏢 그룹웨어\nPlaywright"]
+    LOG["📋 로그 / 스크린샷"]
+    DASH["📊 Streamlit\n대시보드"]
+    SCHED["⏱ 스케줄러\n5분 주기"]
 
-    subgraph 운영["운영 / 모니터링"]
-        SCHEDULER["scheduler.py\nAPScheduler 5분 주기"]
-        DASHBOARD["dashboard.py\nStreamlit 대시보드"]
-        LOGS["logs/\nJSON 처리 로그\n스크린샷"]
-        PROCESSED["processed_mails.json\n중복 처리 방지"]
-    end
-
-    MAIL_SERVER -- "POP3 SSL\n결재합의 메일 수신" --> MAIL_CLIENT
-    MAIL_CLIENT -- "이미지/PDF\n첨부파일 저장" --> ANALYZER
-    MAIL_CLIENT -- "이미지/PDF\n첨부파일 저장" --> LLM_REVIEWER
-    ANALYZER -- "OCR 텍스트\n카테고리 추출" --> APPROVAL
-    LLM_REVIEWER -- "JSON 분석결과\n신뢰도/일치여부" --> APPROVAL
-    TESSERACT -. "OCR 엔진" .-> ANALYZER
-    OLLAMA -. "Vision LLM" .-> LLM_REVIEWER
-
-    APPROVAL -- "confidence ≥ 0.85\n목적 일치 → 승인" --> GW_BOT
-    APPROVAL -- "confidence ≤ 0.40\n목적 불일치 → 반려" --> GW_BOT
-    APPROVAL -- "0.40 < confidence < 0.85\n→ 수동검토 알림" --> MAIL_SERVER
-
-    GW_BOT -- "Playwright\n승인/반려 클릭" --> GROUPWARE
-    GW_BOT -- "처리 스크린샷" --> LOGS
-    MAIL_CLIENT -- "SMTP\n결과 회신" --> MAIL_SERVER
-    APPROVAL --> LOGS
-    MAIL_CLIENT --> PROCESSED
-
-    SCHEDULER -- "주기 실행" --> 봇엔진
-    LOGS --> DASHBOARD
+    MAIL -- "POP3 수신" --> A
+    AI -. "분석 엔진" .-> B
+    C -- "승인 / 반려" --> GW
+    C -- "수동검토 알림" --> MAIL
+    GW -- "결과 회신" --> MAIL
+    C --> LOG
+    GW --> LOG
+    LOG --> DASH
+    SCHED -- "주기 실행" --> BOT
 ```
 
 ---
