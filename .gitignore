@@ -1,0 +1,22 @@
+# 설정 (비밀번호 포함)
+config.yaml
+
+# 처리 데이터
+receipts/
+logs/
+processed_mails.json
+
+# Python
+__pycache__/
+*.pyc
+*.pyo
+.venv/
+venv/
+
+# IDE
+.vscode/
+.idea/
+
+# OS
+.DS_Store
+Thumbs.db

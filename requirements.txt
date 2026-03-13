@@ -1,0 +1,33 @@
+# 메일 처리 (표준 라이브러리: poplib, smtplib, email)
+# 추가 설치 불필요
+
+# 웹 자동화
+playwright>=1.40.0
+
+# 영수증 분석 - 방법 A (OCR + 규칙)
+pytesseract>=0.3.10
+Pillow>=10.0.0
+
+# 영수증 분석 - 방법 B (로컬 LLM)
+requests>=2.31.0
+
+# 윈도우 데스크톱 자동화
+pywinauto>=0.6.8
+PyAutoGUI>=0.9.54
+
+# 파일 처리
+openpyxl>=3.1.0
+python-docx>=1.0.0
+PyPDF2>=3.0.0
+
+# 스케줄링
+APScheduler>=3.10.0
+
+# 대시보드 (선택)
+streamlit>=1.30.0
+
+# 보안 (비밀번호 관리)
+keyring>=24.0.0
+
+# 설정 파일
+PyYAML>=6.0

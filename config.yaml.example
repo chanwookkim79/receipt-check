@@ -1,0 +1,28 @@
+# config.yaml.example
+# 이 파일을 config.yaml로 복사한 뒤 사내 환경에 맞게 수정하세요.
+# config.yaml은 .gitignore에 포함되어 있으므로 저장소에 올라가지 않습니다.
+
+mail:
+  pop_server: "mail.yourcompany.com"
+  pop_port: 995
+  smtp_server: "mail.yourcompany.com"
+  smtp_port: 587
+  user: "your_id@company.com"
+  password: ""        # 비워두고 환경변수 MAIL_PASSWORD 또는 keyring 사용 권장
+  download_dir: "./receipts"
+
+groupware_url: "https://gw.yourcompany.com"
+credentials:
+  id: "your_gw_id"
+  pw: ""              # 비워두고 환경변수 GW_PASSWORD 또는 keyring 사용 권장
+
+llm:
+  base_url: "http://localhost:11434"
+  model: "llava:13b"  # GPU 16GB+ 권장, 또는 llava:7b (GPU 8GB / CPU)
+
+scheduler:
+  interval_minutes: 5
+
+approval:
+  auto_approve_threshold: 0.85
+  auto_reject_threshold: 0.4
