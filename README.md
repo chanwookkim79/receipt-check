@@ -55,37 +55,40 @@
 ## 2. 시스템 아키텍처
 
 ```mermaid
-flowchart LR
-    MAIL["📧 메일 서버\nPOP3 / SMTP"]
+flowchart TD
+    SCHED[⏱ 스케줄러]
+    MAIL[📧 사내 메일 서버]
+    FETCH[메일 수신 및 첨부파일 다운로드]
+    LLM[🤖 Ollama LLaVA]
+    OCR[🔤 Tesseract OCR]
+    ANALYZE[영수증 분석]
+    JUDGE{승인 판단}
+    APPROVE[✅ 자동 승인]
+    REJECT[❌ 자동 반려]
+    MANUAL[👤 수동 검토 요청]
+    GW[🏢 웹 그룹웨어]
+    LOG[📋 처리 로그]
+    DASH[📊 대시보드]
 
-    subgraph BOT["🤖 봇 엔진 (bot.py)"]
-        direction TB
-        A["① 메일 수신\nmail_client.py"]
-        B["② 영수증 분석\nLLM / OCR"]
-        C["③ 승인 판단\napproval_engine.py"]
-        A --> B --> C
-    end
-
-    subgraph AI["💻 로컬 AI"]
-        direction TB
-        LLM["Ollama LLaVA\n방법 B 권장"]
-        OCR["Tesseract OCR\n방법 A 폴백"]
-    end
-
-    GW["🏢 그룹웨어\nPlaywright"]
-    LOG["📋 로그 / 스크린샷"]
-    DASH["📊 Streamlit\n대시보드"]
-    SCHED["⏱ 스케줄러\n5분 주기"]
-
-    MAIL -- "POP3 수신" --> A
-    AI -. "분석 엔진" .-> B
-    C -- "승인 / 반려" --> GW
-    C -- "수동검토 알림" --> MAIL
-    GW -- "결과 회신" --> MAIL
-    C --> LOG
+    SCHED -->|5분 주기| FETCH
+    MAIL -->|POP3| FETCH
+    FETCH --> ANALYZE
+    LLM -->|Vision LLM 권장| ANALYZE
+    OCR -->|OCR 폴백| ANALYZE
+    ANALYZE --> JUDGE
+    JUDGE -->|신뢰도 ≥ 0.85| APPROVE
+    JUDGE -->|신뢰도 ≤ 0.40| REJECT
+    JUDGE -->|그 외| MANUAL
+    APPROVE --> GW
+    REJECT --> GW
+    APPROVE -->|결과 회신| MAIL
+    REJECT -->|반려 사유 회신| MAIL
+    MANUAL -->|검토 요청 메일| MAIL
     GW --> LOG
+    APPROVE --> LOG
+    REJECT --> LOG
+    MANUAL --> LOG
     LOG --> DASH
-    SCHED -- "주기 실행" --> BOT
 ```
 
 ---
