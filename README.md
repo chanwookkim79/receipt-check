@@ -7,16 +7,19 @@
 
 ## 구현 현황
 
+> 최종 업데이트: 2026-03-14
+
 | 파일 | 역할 | 상태 |
 |------|------|------|
-| `engine/mail_client.py` | POP3 수신, 첨부파일 다운로드, SMTP 결과 발송 | 완료 |
-| `engine/receipt_analyzer.py` | OCR(pytesseract) 기반 분석 — 방법 A | 완료 |
-| `engine/llm_reviewer.py` | Ollama LLaVA 로컬 LLM 분석 — 방법 B (권장) | 완료 |
-| `engine/approval_engine.py` | 신뢰도 기반 승인/반려/수동검토 판단 | 완료 |
-| `engine/groupware_automation.py` | Playwright 그룹웨어 자동화 | 완료 |
-| `bot.py` | 전체 파이프라인 통합 (`python bot.py`로 1회 실행) | 완료 |
-| `scheduler.py` | 5분 주기 자동 실행 (`python scheduler.py`) | 완료 |
-| `dashboard.py` | Streamlit 모니터링 (`streamlit run dashboard.py`) | 완료 |
+| `engine/mail_client.py` | POP3 수신, 첨부파일 다운로드, SMTP 결과 발송 | ✅ 완료 |
+| `engine/receipt_analyzer.py` | OCR(pytesseract) 기반 분석 — 방법 A | ✅ 완료 |
+| `engine/llm_reviewer.py` | Ollama LLaVA 로컬 LLM 분석 — 방법 B (권장) | ✅ 완료 |
+| `engine/approval_engine.py` | 신뢰도 기반 승인/반려/수동검토 판단 | ✅ 완료 |
+| `engine/groupware_automation.py` | Playwright 그룹웨어 자동화 | ✅ 완료 |
+| `bot.py` | 전체 파이프라인 통합 (`python bot.py`로 1회 실행) | ✅ 완료 |
+| `scheduler.py` | 5분 주기 자동 실행 (`python scheduler.py`) | ✅ 완료 |
+| `dashboard.py` | Streamlit 모니터링 대시보드 | ✅ 완료 |
+| `simulation.py` | 실서버 없이 브라우저에서 파이프라인 시뮬레이션 | ✅ 완료 |
 
 ### 실제 환경 적용 전 필수 작업
 
@@ -127,7 +130,7 @@ flowchart TD
 ```
 receipt-check/
 ├── README.md
-├── config.yaml                 # 메일/그룹웨어 접속 설정
+├── config.yaml.example         # 설정 템플릿 (config.yaml로 복사 후 수정)
 ├── requirements.txt
 │
 ├── engine/                     # 핵심 엔진
@@ -140,6 +143,8 @@ receipt-check/
 │
 ├── bot.py                      # 전체 파이프라인 통합 실행
 ├── scheduler.py                # APScheduler 주기 실행
+├── dashboard.py                # Streamlit 모니터링 대시보드
+├── simulation.py               # 웹 자동 시뮬레이션 모드
 │
 ├── logs/                       # 실행 로그 (JSON)
 │   └── screenshots/            # 그룹웨어 처리 스크린샷 (감사 추적)
@@ -265,7 +270,7 @@ cd receipt-check
 pip install -r requirements.txt
 
 # 3. Playwright 브라우저 설치
-playwright install chromium
+python -m playwright install chromium
 
 # 4. Tesseract OCR 설치 (방법 A 사용 시)
 #    Windows: https://github.com/UB-Mannheim/tesseract/wiki
@@ -279,16 +284,51 @@ ollama pull llava:13b
 cp config.yaml.example config.yaml
 # config.yaml을 사내 환경에 맞게 편집
 
-# 7. 단일 실행 (테스트)
+# 7. 시뮬레이션으로 먼저 체험 (실서버 불필요)
+python -m streamlit run simulation.py
+
+# 8. 단일 실행 (실제 환경 테스트)
 python bot.py
 
-# 8. 스케줄러로 주기 실행
+# 9. 스케줄러로 주기 실행
 python scheduler.py
+
+# 10. 모니터링 대시보드 실행
+python -m streamlit run dashboard.py
 ```
 
 ---
 
-## 8. 대시보드 UI
+## 8. 시뮬레이션 모드
+
+실제 메일서버 / 그룹웨어 / LLM 없이 브라우저에서 전체 파이프라인을 체험할 수 있는 모드.
+
+```bash
+python -m streamlit run simulation.py
+# → http://localhost:8501
+```
+
+### 내장 시나리오 5개
+
+| # | 시나리오 | 예상 결과 |
+|---|----------|-----------|
+| S1 | 팀 점심 식대 영수증 | ✅ 자동 승인 (신뢰도 93%) |
+| S2 | 교통비 결재에 카페 영수증 첨부 | ❌ 자동 반려 (신뢰도 15%) |
+| S3 | 거래처 접대비 — 주류 포함 | 👤 수동 검토 (신뢰도 62%) |
+| S4 | 사무소모품 구매 영수증 | ✅ 자동 승인 (신뢰도 97%) |
+| S5 | 출장 숙박비 결재에 노래방 영수증 | ❌ 자동 반려 (신뢰도 5%) |
+
+### 주요 기능
+
+- **7단계 파이프라인 애니메이션**: 메일수신 → 영수증 이미지 생성 → LLM 분석 → 판단 → 그룹웨어 처리 → 결과 메일 발송 → 로그 저장
+- **임계값 실시간 조정**: 승인/반려 신뢰도 기준을 슬라이더로 변경하면 결과가 즉시 반영
+- **모의 이미지 생성**: PIL로 영수증 및 그룹웨어 처리 화면 이미지를 자동 생성
+- **실제 엔진 연동**: `ApprovalEngine` 코드를 그대로 사용 — 시뮬레이션과 실제 동작이 동일
+- **로그 저장**: `dashboard.py`에서 바로 확인 가능한 동일 포맷으로 `logs/` 에 저장
+
+---
+
+## 9. 대시보드 UI
 
 `streamlit run dashboard.py` 로 실행. 브라우저에서 `http://localhost:8501` 접속.
 
@@ -340,33 +380,34 @@ python scheduler.py
 
 ---
 
-## 9. 구축 로드맵
+## 10. 구축 로드맵
 
-### 1단계 — 핵심 엔진 (1~2주)
+### 1단계 — 핵심 엔진 ✅ 완료
 
-- [ ] POP3 메일 수신 + 첨부파일 다운로드
-- [ ] 영수증 OCR 또는 LLM 분석 기본 동작
-- [ ] 승인/반려 판단 로직
-- [ ] 에러 발생 시 스크린샷 + 로그 저장
+- [x] POP3 메일 수신 + 첨부파일 다운로드
+- [x] 영수증 OCR 또는 LLM 분석 기본 동작
+- [x] 승인/반려 판단 로직
+- [x] 에러 발생 시 스크린샷 + 로그 저장
+- [x] 웹 자동 시뮬레이션 모드 (`simulation.py`)
 
-### 2단계 — 안정화 (1~2주)
+### 2단계 — 안정화 (진행 예정)
 
 - [ ] retry 로직, 타임아웃 처리
 - [ ] 조건 분기 (if/else) 시나리오 지원
 - [ ] 실제 사내 메일/그룹웨어 대상 테스트
 - [ ] POP3 중복 처리 방지 검증
 
-### 3단계 — 운영 편의 (2~3주)
+### 3단계 — 운영 편의 (일부 완료)
 
-- [ ] APScheduler 기반 정기 실행
-- [ ] Streamlit 대시보드 (실행 이력, 성공/실패 현황)
+- [x] APScheduler 기반 정기 실행
+- [x] Streamlit 대시보드 (실행 이력, 성공/실패 현황)
 - [ ] 처리 이력 SQLite 전환
 - [ ] SMTP 결과 회신 메일 템플릿 고도화
-- [ ] 보안 강화 (keyring, 환경변수)
+- [x] 보안 강화 (keyring, 환경변수)
 
 ---
 
-## 9. 오픈소스 RPA 기술 스택 참고
+## 11. 오픈소스 RPA 기술 스택 참고
 
 본 프로젝트 외에 범용 RPA 자동화에 활용할 수 있는 기술 스택:
 
@@ -389,7 +430,7 @@ python scheduler.py
 
 ---
 
-## 10. 운영 주의사항
+## 12. 운영 주의사항
 
 ### 보안
 - 비밀번호는 `keyring` 라이브러리 또는 환경변수로 관리
